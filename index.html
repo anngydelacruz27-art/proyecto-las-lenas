@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurante Las Leñas</title>
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librerías JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #FF4500; /* Naranja Fuego */
+            --secondary: #FF8C00; /* Naranja Brasa */
+            --dark: #0f0f0f; 
+            --dark-card: rgba(26, 26, 26, 0.9);
+            --text: #F5F5F5;
+            --glass: rgba(0, 0, 0, 0.7);
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--text);
+            font-family: 'Rubik', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- FONDO ANIMADO DE COMIDA --- */
+        .background-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1594041680534-e8c8cdebd659?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            animation: slowZoom 20s infinite alternate;
+        }
+
+        @keyframes slowZoom {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* Canvas para partículas de fuego */
+        #ember-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Tipografía y Textos */
+        h1, h2, h3, .brand-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+        
+        .fire-text {
+            background: linear-gradient(to bottom, #FFD700 0%, #FF4500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 0px 10px rgba(255, 69, 0, 0.8));
+        }
+
+        /* Navbar Glass */
+        nav {
+            background: rgba(15, 15, 15, 0.85) !important;
+            border-bottom: 1px solid rgba(255, 69, 0, 0.3);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Tarjetas */
+        .product-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 15px 40px rgba(255, 69, 0, 0.3);
+        }
+
+        .product-image {
+            height: 220px;
+            width: 100%;
+            object-fit: cover;
+            transition: transform 0.6s;
+        }
+
+        .product-card:hover .product-image { transform: scale(1.1); }
+
+        /* Botones */
+        .btn-fire {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.5);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-fire:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 69, 0, 0.8);
+        }
+
+        .btn-fire::after {
+            content: '';
+            position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .btn-fire:hover::after { left: 100%; }
+
+        /* Floating UI */
+        .floating-promo {
+            position: fixed; top: 100px; right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1a1a;
+            border-radius: 12px;
+            padding: 15px; width: 280px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 998;
+            border-left: 6px solid var(--primary);
+            animation: slideInRight 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .float-btn {
+            position: fixed; right: 30px; width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; z-index: 990;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s;
+        }
+        .whatsapp-float { bottom: 30px; background: #25D366; z-index: 1000;}
+        .cart-float { bottom: 100px; background: var(--primary); z-index: 999; }
+        .float-btn:hover { transform: scale(1.15); }
+
+        /* Timeline de Seguimiento */
+        .tracking-timeline {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 30px;
+        }
+        .tracking-timeline::before {
+            content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 2px;
+            background: #333; z-index: 0;
+        }
+        .timeline-step {
+            position: relative; z-index: 1; text-align: center; width: 33.33%;
+        }
+        .step-circle {
+            width: 32px; height: 32px; background: #333; border-radius: 50%;
+            margin: 0 auto 10px; display: flex; align-items: center; justify-content: center;
+            border: 2px solid #555; transition: all 0.3s;
+        }
+        .timeline-step.active .step-circle {
+            background: var(--primary); border-color: var(--secondary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        .timeline-step.completed .step-circle {
+            background: var(--success); border-color: var(--success);
+        }
+        .step-label { font-size: 0.8rem; color: #888; font-weight: bold; }
+        .timeline-step.active .step-label { color: white; }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; left: 20px; z-index: 100001; }
+        .toast {
+            background: rgba(20, 20, 20, 0.95); border-left: 4px solid var(--primary);
+            color: white; padding: 15px 25px; margin-top: 10px;
+            border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 10px;
+            animation: slideInLeft 0.3s, fadeOut 0.5s 3.5s forwards;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Animaciones */
+        @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+        /* MODALES - CORRECCIÓN DE Z-INDEX */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 100000; /* Z-INDEX AUMENTADO SUPERIOR AL ADMIN (99999) */
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal-content {
+            background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            animation: scaleUp 0.3s;
+        }
+        @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Admin Layout */
+        .admin-sidebar { background: #111; border-right: 1px solid #333; }
+        .image-upload-area { border: 2px dashed #444; background: rgba(255,255,255,0.02); }
+        .image-upload-area:hover { border-color: var(--primary); background: rgba(255,69,0,0.1); }
+        
+        /* Asegurar que el modal de producto esté encima de todo */
+        #product-modal { z-index: 100001; }
+    </style>
+</head>
+<body>
+
+    <!-- FONDO ANIMADO -->
+    <div class="background-container"></div>
+    <canvas id="ember-canvas"></canvas>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- ===================== INTERFAZ PRINCIPAL ===================== -->
+    <div id="app-interface">
+        
+        <!-- Navbar -->
+        <nav class="fixed w-full z-50 px-6 py-4 flex justify-between items-center transition-all duration-300">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="window.scrollTo(0,0)">
+    <div class="w-12 h-12 bg-gradient-to-br from-orange-600 to-red-600 rounded-full flex items-center justify-center overflow-hidden shadow-lg shadow-orange-900/50 group-hover:scale-110 transition">
+        <img src="resources/logo_leñas.png" alt="Logo" class="w-full h-full object-cover">
+    </div>
+    <div class="flex flex-col">
+        <span class="brand-font text-2xl tracking-wider leading-none group-hover:text-orange-500 transition">LAS LEÑAS</span>
+        <span class="text-orange-500 text-xs tracking-[0.3em] font-bold">BRASAS & GRILL</span>
+    </div>
+</div>
+
+            
+            <div class="hidden md:flex gap-8 font-semibold tracking-wide text-sm">
+                <a href="#" class="hover:text-orange-500 transition duration-300 relative group">
+                    INICIO <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#menu-section" class="hover:text-orange-500 transition duration-300 relative group">
+                    CARTA <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all group-hover:w-full"></span>
+                </a>
+                <a href="javascript:void(0)" onclick="openTrackingModal()" class="hover:text-orange-500 transition duration-300 relative group">
+                    SEGUIMIENTO <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all group-hover:w-full"></span>
+                </a>
+                <button onclick="toggleCart()" class="text-orange-500 hover:text-white transition flex items-center gap-2">
+                    <i class="fas fa-shopping-cart"></i> CARRITO
+                </button>
+            </div>
+
+            <button onclick="openAdminLogin()" class="group flex items-center gap-2 border border-gray-700 hover:border-orange-500 px-4 py-2 rounded-full transition-all duration-300 bg-black/50 hover:bg-orange-600">
+                <i class="fas fa-user-shield text-gray-400 group-hover:text-white"></i>
+                <span class="text-xs font-bold text-gray-400 group-hover:text-white">ADMIN</span>
+            </button>
+        </nav>
+
+        <!-- Hero Section -->
+        <header class="min-h-screen flex items-center justify-center text-center relative px-4">
+            <div class="z-10 max-w-4xl pt-20">
+                <span class="text-orange-500 font-bold tracking-widest mb-4 block text-lg animate-pulse">GASTRONOMÍA PERUANA</span>
+                <h1 class="text-6xl md:text-8xl font-black mb-6 fire-text leading-tight drop-shadow-2xl">SABOR QUE<br>ENCIENDE</h1>
+                <p class="text-xl text-gray-200 mb-10 font-light max-w-2xl mx-auto drop-shadow-lg">
+                    La fusión perfecta entre la tradición de las brasas y la velocidad del fast food. 
+                    <strong class="text-white">Crujiente. Jugoso. Inolvidable.</strong>
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button onclick="document.getElementById('menu-section').scrollIntoView({behavior:'smooth'})" class="btn-fire text-lg px-10 py-4">
+                        <i class="fas fa-utensils mr-2"></i> VER MENÚ
+                    </button>
+                    <button onclick="openTrackingModal()" class="px-10 py-4 rounded-full border-2 border-white/30 hover:border-white hover:bg-white/10 transition font-bold text-lg backdrop-blur-sm">
+                        <i class="fas fa-search-location mr-2"></i> MI PEDIDO
+                    </button>
+                </div>
+                
+                <div class="flex justify-center gap-8 mt-16 text-3xl text-gray-400">
+                    <a href="https://www.facebook.com/share/1FHo4YzkJC/" class="hover:text-blue-600 transition hover:-translate-y-2 hover:scale-110"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/sr.laslenas?igsh=azhxbzhqeWFqdXI0" class="hover:text-pink-600 transition hover:-translate-y-2 hover:scale-110"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@srlaslenas?_r=1&_t=ZS-91fSsQLA1if" class="hover:text-white transition hover:-translate-y-2 hover:scale-110"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Menu Section -->
+        <section id="menu-section" class="py-20 container mx-auto px-4 bg-gradient-to-b from-transparent to-black/80">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">NUESTRA <span class="text-orange-500">CARTA</span></h2>
+                <div class="w-24 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent mx-auto"></div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="flex flex-wrap justify-center gap-3 mb-12 sticky top-24 z-30 py-4">
+                <div class="bg-black/80 backdrop-blur-md p-2 rounded-full border border-gray-800 flex flex-wrap justify-center gap-2">
+                    <button onclick="filterProducts('all')" class="filter-btn px-6 py-2 rounded-full hover:bg-orange-600 hover:text-white transition active-filter bg-orange-600 text-white font-bold text-sm">TODOS</button>
+                    <button onclick="filterProducts('parrillas')" class="filter-btn px-6 py-2 rounded-full hover:bg-orange-600 hover:text-white transition text-gray-400 font-bold text-sm">PARRILLAS</button>
+                    <button onclick="filterProducts('hamburguesas')" class="filter-btn px-6 py-2 rounded-full hover:bg-orange-600 hover:text-white transition text-gray-400 font-bold text-sm">HAMBURGUESAS</button>
+                    <button onclick="filterProducts('salchipapas')" class="filter-btn px-6 py-2 rounded-full hover:bg-orange-600 hover:text-white transition text-gray-400 font-bold text-sm">SALCHIPAPAS</button>
+                    <button onclick="filterProducts('chifa')" class="filter-btn px-6 py-2 rounded-full hover:bg-orange-600 hover:text-white transition text-gray-400 font-bold text-sm">CHIFA</button>
+                </div>
+            </div>
+
+            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Productos inyectados -->
+            </div>
+        </section>
+
+        <!-- Oferta Flotante -->
+        <div id="floating-promo" class="floating-promo">
+            <button onclick="this.parentElement.style.display='none'" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+            <div class="flex items-start gap-3">
+                <div class="bg-red-100 text-red-600 p-3 rounded-full animate-bounce"><i class="fas fa-fire-alt text-xl"></i></div>
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg leading-tight mb-1">¡OFERTA FLASH!</h4>
+                    <p class="text-sm text-gray-600 mb-2">Pollo a la Brasa + 1/4 Papas por solo <strong>S/ 39.90</strong></p>
+                    <button onclick="addPromoToCart()" class="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs font-bold py-2 px-4 rounded shadow-lg hover:shadow-xl transition w-full">
+                        APROVECHAR AHORA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones Flotantes -->
+        <div class="whatsapp-float float-btn" onclick="openWhatsApp()">
+            <i class="fab fa-whatsapp"></i>
+        </div>
+        <div class="cart-float float-btn" onclick="toggleCart()">
+            <i class="fas fa-shopping-cart"></i>
+            <span id="cart-counter" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0f0f0f]">0</span>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-black/90 border-t border-gray-800 pt-16 pb-8 backdrop-blur-lg">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                    <div>
+                        <div class="flex items-center gap-2 mb-6">
+    <div class="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center overflow-hidden">
+        <img src="resources/logo_leñas.png" alt="Logo" class="w-full h-full object-cover">
+    </div>
+    <span class="brand-font text-xl">LAS LEÑAS</span>
+</div>
+
+                        <p class="text-gray-500 text-sm leading-relaxed">
+                            Sabores auténticos de la tierra de los incas, cocinados con la pasión de nuestras brasas ardientes.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white mb-6 uppercase tracking-wider">Enlaces</h4>
+                        <ul class="space-y-3 text-sm text-gray-400">
+                            <li><a href="#" class="hover:text-orange-500 transition">Inicio</a></li>
+                            <li><a href="#menu-section" class="hover:text-orange-500 transition">Menú</a></li>
+                            <li><a href="javascript:void(0)" onclick="openTrackingModal()" class="hover:text-orange-500 transition">Seguimiento</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white mb-6 uppercase tracking-wider">Contacto</h4>
+                        <ul class="space-y-3 text-sm text-gray-400">
+    <li>
+        <i class="fas fa-map-marker-alt w-6 text-orange-500"></i>
+        <a href="https://www.google.com/maps/place/Sr.+LasLe%C3%B1as/@-13.1421918,-74.2127603,16.75z/data=!4m6!3m5!1s0x91128758c902d4c7:0xf175c0b8f91d2d9d!8m2!3d-13.1421453!4d-74.2127968!16s%2Fg%2F11ss7rwwbb!17m2!4m1!1e3!18m1!1e1?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D" 
+           target="_blank" 
+           class="hover:text-orange-500 transition">Carr. Huanta-Ayacucho, Ayacucho 05001
+        </a>
+    </li>
+
+    <li>
+        <i class="fas fa-phone w-6 text-orange-500"></i>
+        902615545
+    </li>
+</ul>
+
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white mb-6 uppercase tracking-wider">Horario</h4>
+                        <ul class="space-y-3 text-sm text-gray-400">
+                            <li class="flex justify-between"><span>Lun - Vie:</span> <span class="text-white">11am - 10pm</span></li>
+                            <li class="flex justify-between"><span>Sábados:</span> <span class="text-white">11am - 11pm</span></li>
+                            <li class="flex justify-between"><span>Domingos:</span> <span class="text-white">11am - 9pm</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-gray-900 pt-8 text-center text-gray-600 text-sm">
+                    <p>&copy; Las Leñas 2025. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ===================== MODALES (SPA) ===================== -->
+
+    <!-- Modal Seguimiento (MEJORADO) -->
+    <div id="tracking-modal" class="modal-overlay">
+        <div class="modal-content p-8 rounded-2xl w-full max-w-md relative bg-[#1a1a1a]">
+            <button onclick="document.getElementById('tracking-modal').style.display='none'" class="absolute top-4 right-4 text-gray-500 hover:text-white text-xl">&times;</button>
+            
+            <h2 class="text-2xl font-bold mb-2 text-orange-500 flex items-center gap-2">
+                <i class="fas fa-motorcycle"></i> RASTREAR PEDIDO
+            </h2>
+            <p class="text-gray-400 text-sm mb-6">Ingresa el código que recibiste al finalizar tu compra.</p>
+            
+            <div class="relative mb-6">
+                <input type="text" id="track-id" placeholder="Ej: LN-4582" class="w-full bg-black/50 border border-gray-700 rounded-lg pl-4 pr-12 py-3 text-white focus:border-orange-500 outline-none transition font-mono uppercase">
+                <button onclick="trackOrder()" class="absolute right-2 top-2 bg-orange-600 text-white p-1 rounded-md w-8 h-8 flex items-center justify-center hover:bg-orange-700 transition"><i class="fas fa-search"></i></button>
+            </div>
+            
+            <!-- Resultado Visual -->
+            <div id="tracking-result" class="hidden mt-6 pt-6 border-t border-gray-800">
+                <!-- Se inyecta JS aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Login Admin -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content p-8 rounded-2xl w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6 text-orange-500 text-2xl border border-gray-700 shadow-lg shadow-orange-900/20">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-white">Acceso Administrativo</h2>
+            <form onsubmit="event.preventDefault(); adminLogin();" class="space-y-4 mt-6">
+                <input type="text" id="admin-user" placeholder="Usuario" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-orange-500 outline-none transition">
+                <input type="password" id="admin-pass" placeholder="Contraseña" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-orange-500 outline-none transition">
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition shadow-lg">INGRESAR</button>
+            </form>
+            <button onclick="document.getElementById('login-modal').style.display='none'" class="mt-4 text-gray-500 hover:text-white text-sm">Cancelar</button>
+            <p id="login-error" class="text-red-500 mt-4 text-sm hidden font-bold"><i class="fas fa-exclamation-circle"></i> Credenciales incorrectas</p>
+        </div>
+    </div>
+
+    <!-- Modal Carrito -->
+    <div id="cart-modal" class="fixed inset-0 z-[1000] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="toggleCart()"></div>
+        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-[#1a1a1a] shadow-2xl transform transition-transform duration-300 flex flex-col border-l border-gray-800">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-[#151515]">
+                <h2 class="text-xl font-bold brand-font text-white"><i class="fas fa-shopping-bag text-orange-500 mr-2"></i> TU PEDIDO</h2>
+                <button onclick="toggleCart()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <!-- Items del carrito -->
+            </div>
+            <div class="p-6 bg-[#151515] border-t border-gray-800">
+                <div class="flex justify-between mb-2 text-gray-400"><span>Subtotal</span> <span id="cart-subtotal">S/ 0.00</span></div>
+                <div class="flex justify-between mb-6 text-xl font-bold text-white"><span>Total</span> <span id="cart-total" class="text-orange-500">S/ 0.00</span></div>
+                <button onclick="openCheckout()" class="w-full btn-fire py-4 text-lg shadow-lg">PROCEDER AL PAGO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div id="checkout-modal" class="modal-overlay">
+        <div class="modal-content w-full max-w-2xl rounded-2xl overflow-hidden max-h-[90vh] flex flex-col bg-[#1a1a1a]">
+            <div class="p-6 bg-gradient-to-r from-orange-600 to-red-600 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white"><i class="fas fa-cash-register mr-2"></i> Finalizar Compra</h2>
+                <button onclick="document.getElementById('checkout-modal').style.display='none'" class="text-white/80 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-8 overflow-y-auto">
+                <form id="checkout-form" onsubmit="event.preventDefault(); processOrder();">
+                    <h3 class="text-orange-500 font-bold mb-4 uppercase text-sm tracking-wider">Información de Entrega</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <input type="text" id="cust-name" placeholder="Nombre Completo" required class="bg-black/30 border border-gray-700 rounded p-3 text-white focus:border-orange-500 outline-none">
+                        <input type="tel" id="cust-phone" placeholder="Teléfono / WhatsApp" required class="bg-black/30 border border-gray-700 rounded p-3 text-white focus:border-orange-500 outline-none">
+                        <input type="text" id="cust-address" placeholder="Dirección de Entrega" required class="bg-black/30 border border-gray-700 rounded p-3 text-white focus:border-orange-500 outline-none md:col-span-2">
+                    </div>
+
+                    <h3 class="text-orange-500 font-bold mb-4 uppercase text-sm tracking-wider">Método de Pago</h3>
+                    <div class="grid grid-cols-3 gap-3 mb-8">
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="payment" value="yape" class="hidden peer" checked>
+                            <div class="border border-gray-700 bg-gray-800 p-4 rounded-lg text-center peer-checked:border-purple-500 peer-checked:bg-purple-900/20 transition hover:bg-gray-700 group-hover:border-gray-500">
+                                <i class="fas fa-qrcode text-2xl mb-2 text-purple-400"></i>
+                                <div class="text-xs font-bold text-gray-300">Yape/Plin</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="payment" value="card" class="hidden peer">
+                            <div class="border border-gray-700 bg-gray-800 p-4 rounded-lg text-center peer-checked:border-blue-500 peer-checked:bg-blue-900/20 transition hover:bg-gray-700 group-hover:border-gray-500">
+                                <i class="fas fa-credit-card text-2xl mb-2 text-blue-400"></i>
+                                <div class="text-xs font-bold text-gray-300">Tarjeta</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="payment" value="cash" class="hidden peer">
+                            <div class="border border-gray-700 bg-gray-800 p-4 rounded-lg text-center peer-checked:border-green-500 peer-checked:bg-green-900/20 transition hover:bg-gray-700 group-hover:border-gray-500">
+                                <i class="fas fa-money-bill-wave text-2xl mb-2 text-green-400"></i>
+                                <div class="text-xs font-bold text-gray-300">Efectivo</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="bg-black/30 p-4 rounded-lg mb-6 border border-gray-800 flex justify-between font-bold text-lg">
+                        <span class="text-gray-300">Total a Pagar:</span>
+                        <span class="text-orange-500" id="checkout-total">S/ 0.00</span>
+                    </div>
+
+                    <button type="submit" class="w-full btn-fire py-4 text-lg shadow-lg">CONFIRMAR PEDIDO</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== PANEL ADMINISTRATIVO (SPA) ===================== -->
+    <div id="admin-panel" class="hidden fixed inset-0 bg-[#0f0f0f] z-[99999] overflow-y-auto">
+        <div class="flex min-h-screen">
+            <!-- Sidebar -->
+            <div class="admin-sidebar w-64 flex-shrink-0 hidden md:block border-r border-gray-800 bg-[#111]">
+                <div class="p-6 border-b border-gray-800">
+                    <h2 class="text-2xl font-bold text-orange-500 brand-font">LEÑAS ADMIN</h2>
+                    <p class="text-xs text-gray-500 mt-1">v3.0 Ultimate</p>
+                </div>
+                <nav class="p-4 space-y-2">
+                    <button onclick="showAdminTab('dashboard')" class="admin-nav-item w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition flex items-center active"><i class="fas fa-chart-pie w-6"></i> Dashboard</button>
+                    <button onclick="showAdminTab('orders')" class="admin-nav-item w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition flex items-center"><i class="fas fa-clipboard-list w-6"></i> Pedidos</button>
+                    <button onclick="showAdminTab('products')" class="admin-nav-item w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition flex items-center"><i class="fas fa-hamburger w-6"></i> Productos</button>
+                    <button onclick="showAdminTab('reports')" class="admin-nav-item w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition flex items-center"><i class="fas fa-file-invoice-dollar w-6"></i> Contabilidad</button>
+                    <button onclick="showAdminTab('config')" class="admin-nav-item w-full text-left px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition flex items-center"><i class="fas fa-cogs w-6"></i> Configuración</button>
+                </nav>
+                <div class="p-4 border-t border-gray-800 absolute bottom-0 w-full">
+                    <button onclick="logoutAdmin()" class="w-full bg-red-900/20 text-red-500 py-2 rounded border border-red-900/50 hover:bg-red-900/50 transition"><i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión</button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 p-8">
+                <!-- Header Mobile del Admin -->
+                <div class="md:hidden flex justify-between items-center mb-6">
+                    <span class="text-orange-500 font-bold">ADMIN PANEL</span>
+                    <button onclick="logoutAdmin()" class="text-red-500"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+
+                <!-- Tabs Content -->
+                <div id="tab-dashboard" class="admin-tab-content">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Resumen General</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
+                            <div class="text-gray-400 text-sm mb-1">Ventas Hoy</div>
+                            <div class="text-3xl font-bold text-green-500" id="dash-sales">S/ 0.00</div>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
+                            <div class="text-gray-400 text-sm mb-1">Pedidos Totales</div>
+                            <div class="text-3xl font-bold text-orange-500" id="dash-orders">0</div>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
+                            <div class="text-gray-400 text-sm mb-1">Ticket Promedio</div>
+                            <div class="text-3xl font-bold text-blue-500" id="dash-ticket">S/ 0.00</div>
+                        </div>
+                         <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
+                            <div class="text-gray-400 text-sm mb-1">Productos Activos</div>
+                            <div class="text-3xl font-bold text-purple-500" id="dash-products">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 h-96">
+                        <h3 class="text-lg font-bold mb-4 text-white">Tendencia de Ventas (Semanal)</h3>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+
+                <div id="tab-orders" class="admin-tab-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Gestión de Pedidos</h2>
+                    <div class="bg-[#1a1a1a] rounded-xl border border-gray-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-black/30 text-gray-400">
+                                    <tr>
+                                        <th class="p-4">ID</th>
+                                        <th class="p-4">Cliente</th>
+                                        <th class="p-4">Total</th>
+                                        <th class="p-4">Estado</th>
+                                        <th class="p-4">Fecha</th>
+                                        <th class="p-4">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body" class="divide-y divide-gray-800 text-gray-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-products" class="admin-tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-white">Inventario</h2>
+                        <button onclick="openProductModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-bold flex items-center gap-2 shadow-lg"><i class="fas fa-plus"></i> Nuevo Plato</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="admin-products-grid"></div>
+                </div>
+
+                <div id="tab-reports" class="admin-tab-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Contabilidad y Reportes</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-[#1a1a1a] p-8 rounded-xl border border-gray-800 text-center hover:border-red-900 transition">
+                            <div class="w-16 h-16 bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fas fa-file-pdf"></i></div>
+                            <h3 class="text-xl font-bold mb-2 text-white">Reporte de Ventas PDF</h3>
+                            <p class="text-gray-500 mb-6 text-sm">Descarga un documento formal con el resumen de ventas del mes.</p>
+                            <button onclick="generatePDFReport()" class="w-full border border-red-600 text-red-500 hover:bg-red-600 hover:text-white py-3 rounded-lg transition font-bold">DESCARGAR PDF</button>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-8 rounded-xl border border-gray-800 text-center hover:border-green-900 transition">
+                            <div class="w-16 h-16 bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fas fa-file-excel"></i></div>
+                            <h3 class="text-xl font-bold mb-2 text-white">Exportar Data Excel</h3>
+                            <p class="text-gray-500 mb-6 text-sm">Descarga la base de datos completa de pedidos para análisis contable.</p>
+                            <button onclick="generateExcelReport()" class="w-full border border-green-600 text-green-500 hover:bg-green-600 hover:text-white py-3 rounded-lg transition font-bold">DESCARGAR EXCEL</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-config" class="admin-tab-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-white">Configuración del Sistema</h2>
+                    <div class="bg-[#1a1a1a] p-8 rounded-xl border border-gray-800">
+                        <h3 class="text-xl font-bold text-orange-500 mb-4">Portabilidad de Datos</h3>
+                        <p class="text-gray-400 mb-6">
+                            Lleva tu inventario a otra computadora. Descarga la configuración y cárgala en el nuevo dispositivo.
+                        </p>
+                        <div class="flex gap-4">
+                            <button onclick="exportData()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2"><i class="fas fa-download"></i> Descargar Copia (JSON)</button>
+                            <label class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 cursor-pointer transition">
+                                <i class="fas fa-upload"></i> Cargar Copia
+                                <input type="file" class="hidden" onchange="importData(this)">
+                            </label>
+                        </div>
+                        <p id="import-msg" class="mt-3 font-bold"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Producto (Admin) - CORREGIDO Z-INDEX -->
+    <div id="product-modal" class="modal-overlay">
+        <div class="modal-content p-6 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-orange-500" id="modal-product-title">Editar Producto</h3>
+            <form onsubmit="event.preventDefault(); saveProduct();">
+                <input type="hidden" id="edit-id">
+                <div class="mb-4">
+                    <label class="block text-gray-400 text-xs mb-1">Nombre</label>
+                    <input type="text" id="edit-name" class="w-full bg-black border border-gray-700 rounded p-2 text-white focus:border-orange-500 outline-none" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">Precio (S/)</label>
+                        <input type="number" step="0.10" id="edit-price" class="w-full bg-black border border-gray-700 rounded p-2 text-white focus:border-orange-500 outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">Categoría</label>
+                        <select id="edit-category" class="w-full bg-black border border-gray-700 rounded p-2 text-white focus:border-orange-500 outline-none">
+                            <option value="parrillas">Parrillas</option>
+                            <option value="hamburguesas">Hamburguesas</option>
+                            <option value="salchipapas">Salchipapas</option>
+                            <option value="chifa">Chifa</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-400 text-xs mb-1">Descripción</label>
+                    <textarea id="edit-desc" class="w-full bg-black border border-gray-700 rounded p-2 text-white focus:border-orange-500 outline-none" rows="2"></textarea>
+                </div>
+                <div class="mb-6 image-upload-area p-4 rounded text-center">
+                    <img id="edit-preview" src="" class="h-24 w-24 object-cover mx-auto mb-2 rounded border border-gray-600">
+                    <input type="file" id="edit-image-file" accept="image/*" class="text-sm text-gray-500 mx-auto" onchange="handleImageUpload(this)">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('product-modal').style.display='none'" class="px-4 py-2 text-gray-400 hover:text-white">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================== JAVASCRIPT ===================== -->
+    <script>
+        // CONFIGURACIÓN GLOBAL
+        const WHATSAPP_NUMBER = "51902615545";
+        let products = JSON.parse(localStorage.getItem('lenas_products')) || [
+            { id: 1, name: "Pollo a la Leña Clásico", category: "parrillas", price: 54.90, desc: "Pollo entero, papas fritas, ensalada.", image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80", rating: 4.8 },
+            { id: 2, name: "Burger Royal Leñas", category: "hamburguesas", price: 22.50, desc: "Carne 200g, huevo, queso cheddar.", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80", rating: 4.7 },
+            { id: 3, name: "Salchipapa Extrema", category: "salchipapas", price: 18.90, desc: "Frankfurter, chorizo, papas nativas.", image: "https://images.unsplash.com/photo-1585325701165-351af916e581?auto=format&fit=crop&w=500&q=80", rating: 4.5 },
+            { id: 4, name: "Costillas BBQ", category: "parrillas", price: 45.00, desc: "Costillas bañadas en BBQ ahumada.", image: "https://images.unsplash.com/photo-1544025162-d76690b6d029?auto=format&fit=crop&w=500&q=80", rating: 4.9 },
+            { id: 5, name: "Chaufa de Pollo", category: "chifa", price: 24.00, desc: "Sabor oriental con trozos de pollo a la brasa.", image: "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=500&q=80", rating: 4.6 },
+            { id: 6, name: "Anticuchos de Corazón", category: "parrillas", price: 28.00, desc: "2 palos de corazón, papas doradas.", image: "https://images.unsplash.com/photo-1534939561126-855f86218185?auto=format&fit=crop&w=500&q=80", rating: 4.8 }
+        ];
+        
+        let cart = JSON.parse(localStorage.getItem('lenas_cart')) || [];
+        let orders = JSON.parse(localStorage.getItem('lenas_orders')) || [];
+        let currentImageBase64 = '';
+
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            initEmbers(); // Iniciar animación de fuego
+            renderProducts('all');
+            updateCartCounter();
+            initChart();
+        });
+
+        // --- EFECTO DE BRASAS (CANVAS) ---
+        function initEmbers() {
+            const canvas = document.getElementById('ember-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = canvas.height + Math.random() * 100;
+                    this.size = Math.random() * 2 + 1;
+                    this.speed = Math.random() * 1 + 0.5;
+                    this.color = `rgba(255, ${Math.floor(Math.random() * 100) + 50}, 0, ${Math.random() * 0.5 + 0.2})`;
+                }
+                update() {
+                    this.y -= this.speed;
+                    this.x += Math.sin(this.y * 0.01) * 0.5; // Movimiento ondulante
+                    if (this.y < 0) this.reset();
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => { p.update(); p.draw(); });
+                requestAnimationFrame(animate);
+            }
+            animate();
+            
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // --- NOTIFICACIONES (TOAST) ---
+        function showToast(msg, type='info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeftColor = type === 'success' ? '#00C851' : (type === 'error' ? '#ff4444' : '#FF4500');
+            toast.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':(type==='error'?'fa-exclamation-circle':'fa-info-circle')}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // --- LÓGICA DE PRODUCTOS ---
+        function renderProducts(filter) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            
+            // Actualizar botones de filtro
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-600', 'text-white');
+                btn.classList.add('text-gray-400');
+                if((filter === 'all' && btn.innerText === 'TODOS') || btn.innerText.toLowerCase() === filter) {
+                    btn.classList.add('bg-orange-600', 'text-white');
+                    btn.classList.remove('text-gray-400');
+                }
+            });
+
+            const filtered = filter === 'all' ? products : products.filter(p => p.category === filter);
+
+            filtered.forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-card group">
+                        <div class="relative overflow-hidden">
+                            <img src="${p.image}" alt="${p.name}" class="product-image">
+                            <div class="absolute top-2 right-2 bg-black/70 backdrop-blur text-white text-xs font-bold px-2 py-1 rounded flex items-center">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i> ${p.rating || 5.0}
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-xs font-bold text-orange-500 uppercase tracking-widest">${p.category}</span>
+                                    <h3 class="text-xl font-bold text-white leading-tight group-hover:text-orange-500 transition">${p.name}</h3>
+                                </div>
+                                <span class="text-lg font-bold text-white bg-gray-800 px-2 py-1 rounded border border-gray-700">S/ ${p.price.toFixed(2)}</span>
+                            </div>
+                            <p class="text-gray-400 text-sm mb-4 line-clamp-2">${p.desc}</p>
+                            <button onclick="addToCart(${p.id})" class="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20">
+                                <i class="fas fa-plus"></i> AGREGAR
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterProducts(cat) { renderProducts(cat); }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            const existing = cart.find(item => item.id === id);
+            if(existing) existing.qty++;
+            else cart.push({...product, qty: 1});
+            saveCart();
+            showToast(`Agregado: ${product.name}`, 'success');
+        }
+
+        function addPromoToCart() {
+            const promoId = 999;
+            const existing = cart.find(item => item.id === promoId);
+            if(!existing) {
+                cart.push({ id: promoId, name: "PROMO FLASH: Pollo + 1/4", price: 39.90, qty: 1, image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=100&q=60" });
+                saveCart();
+                document.getElementById('floating-promo').style.display = 'none';
+                toggleCart();
+                showToast("¡Promoción agregada!", 'success');
+            }
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            saveCart();
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if(item) {
+                item.qty += delta;
+                if(item.qty <= 0) removeFromCart(id);
+                else saveCart();
+            }
+        }
+
+        function saveCart() {
+            localStorage.setItem('lenas_cart', JSON.stringify(cart));
+            updateCartCounter();
+            renderCartItems();
+        }
+
+        function updateCartCounter() {
+            const count = cart.reduce((acc, item) => acc + item.qty, 0);
+            document.getElementById('cart-counter').innerText = count;
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cart-modal');
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                renderCartItems();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderCartItems() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let total = 0;
+
+            if(cart.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fas fa-shopping-basket text-4xl mb-2"></i><p>Tu carrito está vacío</p></div>';
+            } else {
+                cart.forEach(item => {
+                    const subtotal = item.price * item.qty;
+                    total += subtotal;
+                    container.innerHTML += `
+                        <div class="flex items-center gap-4 bg-black/30 p-3 rounded-lg border border-gray-800">
+                            <img src="${item.image}" class="w-16 h-16 object-cover rounded-md">
+                            <div class="flex-1">
+                                <h4 class="font-bold text-white text-sm">${item.name}</h4>
+                                <div class="text-orange-500 font-bold text-sm">S/ ${item.price.toFixed(2)}</div>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 bg-black rounded p-1">
+                                <button onclick="changeQty(${item.id}, 1)" class="text-gray-400 hover:text-white px-2"><i class="fas fa-chevron-up text-xs"></i></button>
+                                <span class="font-bold text-sm text-white">${item.qty}</span>
+                                <button onclick="changeQty(${item.id}, -1)" class="text-gray-400 hover:text-white px-2"><i class="fas fa-chevron-down text-xs"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('cart-subtotal').innerText = `S/ ${total.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `S/ ${total.toFixed(2)}`;
+        }
+
+        // --- CHECKOUT ---
+        function openCheckout() {
+            if(cart.length === 0) return showToast("Agrega productos primero", 'error');
+            toggleCart();
+            document.getElementById('checkout-modal').style.display = 'flex';
+            const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            document.getElementById('checkout-total').innerText = `S/ ${total.toFixed(2)}`;
+        }
+
+        function processOrder() {
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value;
+            const payment = document.querySelector('input[name="payment"]:checked').value;
+            const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            
+            const newOrder = {
+                id: 'LN-' + Math.floor(1000 + Math.random() * 9000),
+                customer: name, phone: phone, address: address, payment: payment,
+                total: total, date: new Date().toLocaleString(), status: 'Pendiente',
+                items: [...cart]
+            };
+            
+            orders.unshift(newOrder);
+            localStorage.setItem('lenas_orders', JSON.stringify(orders));
+            
+            cart = []; saveCart();
+            document.getElementById('checkout-modal').style.display = 'none';
+            document.getElementById('checkout-form').reset();
+            
+            showToast(`¡Pedido ${newOrder.id} confirmado!`, 'success');
+            
+            let msg = `Hola *Leñas Grill*, soy ${name}.%0A%0A*Mi Pedido (${newOrder.id}):*%0A`;
+            newOrder.items.forEach(i => msg += `- ${i.qty}x ${i.name} (S/ ${i.price})%0A`);
+            msg += `%0A*Total:* S/ ${total.toFixed(2)}%0A*Pago:* ${payment}%0A*Dirección:* ${address}`;
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+        }
+
+        function openWhatsApp() { window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=Hola Leñas Grill`, '_blank'); }
+
+        // --- SEGUIMIENTO MEJORADO (TIMELINE) ---
+        function openTrackingModal() { document.getElementById('tracking-modal').style.display = 'flex'; }
+
+        function trackOrder() {
+            const id = document.getElementById('track-id').value.trim();
+            const order = orders.find(o => o.id === id);
+            const res = document.getElementById('tracking-result');
+            
+            if(order) {
+                const statuses = ['Pendiente', 'En Preparación', 'Entregado'];
+                const currentIdx = statuses.indexOf(order.status);
+                
+                let timelineHTML = `<div class="tracking-timeline">`;
+                statuses.forEach((s, idx) => {
+                    let cls = idx < currentIdx ? 'completed' : (idx === currentIdx ? 'active' : '');
+                    timelineHTML += `
+                        <div class="timeline-step ${cls}">
+                            <div class="step-circle"><i class="fas ${idx===0?'fa-clipboard-check':(idx===1?'fa-fire':'fa-motorcycle')} ${idx<=currentIdx?'text-white':'text-gray-500'}"></i></div>
+                            <div class="step-label">${s}</div>
+                        </div>
+                    `;
+                });
+                timelineHTML += `</div>`;
+
+                res.innerHTML = `
+                    ${timelineHTML}
+                    <div class="text-center mt-6 p-4 bg-black/30 rounded-lg">
+                        <h3 class="font-bold text-white text-lg">${order.customer}</h3>
+                        <p class="text-sm text-gray-400">Total: <span class="text-orange-500 font-bold">S/ ${order.total.toFixed(2)}</span></p>
+                        <p class="text-xs text-gray-500 mt-1">${order.date}</p>
+                    </div>
+                `;
+            } else {
+                res.innerHTML = `<p class="text-red-500 text-center bg-red-900/20 p-3 rounded">No encontramos el pedido <strong>${id}</strong></p>`;
+            }
+            res.classList.remove('hidden');
+        }
+
+        // --- ADMINISTRACIÓN ---
+        function openAdminLogin() { document.getElementById('login-modal').style.display = 'flex'; }
+        
+        function adminLogin() {
+            if(document.getElementById('admin-user').value === 'srlaslenas' && document.getElementById('admin-pass').value === 'lenas2026') {
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('admin-panel').classList.remove('hidden');
+                initAdmin();
+                showToast('Bienvenido Administrador', 'success');
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('admin-user').value = '';
+            document.getElementById('admin-pass').value = '';
+        }
+
+        function showAdminTab(tab) {
+            document.querySelectorAll('.admin-nav-item').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.querySelectorAll('.admin-tab-content').forEach(div => div.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+        }
+
+        function initAdmin() {
+            const totalSales = orders.reduce((acc, o) => acc + o.total, 0);
+            document.getElementById('dash-sales').innerText = `S/ ${totalSales.toFixed(2)}`;
+            document.getElementById('dash-orders').innerText = orders.length;
+            document.getElementById('dash-ticket').innerText = orders.length ? `S/ ${(totalSales/orders.length).toFixed(2)}` : 'S/ 0.00';
+            document.getElementById('dash-products').innerText = products.length;
+            renderAdminOrders();
+            renderAdminProducts();
+        }
+
+        function renderAdminOrders() {
+            const tbody = document.getElementById('orders-table-body');
+            tbody.innerHTML = '';
+            orders.forEach(o => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-white/5 transition border-b border-gray-800">
+                        <td class="p-4 font-mono text-orange-500">${o.id}</td>
+                        <td class="p-4">${o.customer}</td>
+                        <td class="p-4 font-bold">S/ ${o.total.toFixed(2)}</td>
+                        <td class="p-4">
+                            <select onchange="changeStatus('${o.id}', this.value)" class="bg-black border border-gray-700 rounded px-2 py-1 text-xs text-white focus:border-orange-500 outline-none">
+                                <option ${o.status==='Pendiente'?'selected':''}>Pendiente</option>
+                                <option ${o.status==='En Preparación'?'selected':''}>En Preparación</option>
+                                <option ${o.status==='Entregado'?'selected':''}>Entregado</option>
+                            </select>
+                        </td>
+                        <td class="p-4 text-xs text-gray-500">${o.date}</td>
+                        <td class="p-4">
+                            <button onclick="printTicket('${o.id}')" class="text-blue-500 hover:text-white mr-2" title="Imprimir Ticket"><i class="fas fa-print"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function changeStatus(id, status) {
+            const order = orders.find(o => o.id === id);
+            if(order) {
+                order.status = status;
+                localStorage.setItem('lenas_orders', JSON.stringify(orders));
+                showToast(`Pedido ${id} actualizado`, 'info');
+            }
+        }
+
+        function renderAdminProducts() {
+            const grid = document.getElementById('admin-products-grid');
+            grid.innerHTML = '';
+            products.forEach(p => {
+                grid.innerHTML += `
+                    <div class="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800 flex hover:border-orange-500 transition">
+                        <img src="${p.image}" class="w-24 h-24 object-cover">
+                        <div class="p-4 flex-1">
+                            <h4 class="font-bold text-white">${p.name}</h4>
+                            <div class="text-orange-500 font-bold">S/ ${p.price.toFixed(2)}</div>
+                            <div class="text-xs text-gray-500 mt-2">
+                                <button onclick="editProduct(${p.id})" class="text-blue-500 mr-3 hover:underline">Editar</button>
+                                <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:underline">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- PRODUCT CRUD ---
+        function openProductModal() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('edit-name').value = '';
+            document.getElementById('edit-price').value = '';
+            document.getElementById('edit-desc').value = '';
+            document.getElementById('edit-preview').src = '';
+            currentImageBase64 = '';
+            document.getElementById('modal-product-title').innerText = "Nuevo Producto";
+            document.getElementById('product-modal').style.display = 'flex';
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if(e.target.result.length > 2000000) return showToast("Imagen muy pesada (Max 2MB)", 'error');
+                    document.getElementById('edit-preview').src = e.target.result;
+                    currentImageBase64 = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveProduct() {
+            const id = document.getElementById('edit-id').value;
+            const name = document.getElementById('edit-name').value;
+            const price = parseFloat(document.getElementById('edit-price').value);
+            const category = document.getElementById('edit-category').value;
+            const desc = document.getElementById('edit-desc').value;
+            const image = currentImageBase64 || "https://via.placeholder.com/300?text=No+Image";
+
+            if(id) {
+                const idx = products.findIndex(p => p.id == id);
+                if(idx !== -1) products[idx] = { ...products[idx], name, price, category, desc, image: currentImageBase64 || products[idx].image };
+            } else {
+                products.push({ id: Date.now(), name, price, category, desc, image, rating: 5.0 });
+            }
+            
+            localStorage.setItem('lenas_products', JSON.stringify(products));
+            document.getElementById('product-modal').style.display = 'none';
+            renderProducts('all');
+            renderAdminProducts();
+            showToast('Producto guardado', 'success');
+        }
+
+        function editProduct(id) {
+            const p = products.find(x => x.id == id);
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('edit-name').value = p.name;
+            document.getElementById('edit-price').value = p.price;
+            document.getElementById('edit-category').value = p.category;
+            document.getElementById('edit-desc').value = p.desc;
+            document.getElementById('edit-preview').src = p.image;
+            document.getElementById('modal-product-title').innerText = "Editar Producto";
+            document.getElementById('product-modal').style.display = 'flex';
+        }
+
+        function deleteProduct(id) {
+            if(confirm("¿Eliminar este producto?")) {
+                products = products.filter(p => p.id != id);
+                localStorage.setItem('lenas_products', JSON.stringify(products));
+                renderProducts('all');
+                renderAdminProducts();
+                showToast('Producto eliminado', 'info');
+            }
+        }
+
+        // --- REPORTES ---
+        function printTicket(id) {
+            const o = orders.find(x => x.id === id);
+            let content = `LEÑAS BRASAS & GRILL\nPedido: ${o.id}\nFecha: ${o.date}\nCliente: ${o.customer}\n\n`;
+            o.items.forEach(i => content += `${i.name} x${i.qty} - S/${(i.price*i.qty).toFixed(2)}\n`);
+            content += `\nTOTAL: S/ ${o.total.toFixed(2)}\nPago: ${o.payment}`;
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Ticket_${o.id}.txt`;
+            link.click();
+        }
+
+        function generatePDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("REPORTE DE VENTAS - LEÑAS GRILL", 14, 20);
+            let y = 30;
+            orders.forEach(o => {
+                doc.text(`${o.id} - ${o.date.split(',')[0]} - S/${o.total.toFixed(2)} - ${o.status}`, 14, y);
+                y += 10;
+            });
+            doc.save("Reporte_Ventas.pdf");
+        }
+
+        function generateExcelReport() {
+            const ws = XLSX.utils.json_to_sheet(orders.map(o => ({ ID: o.id, Fecha: o.date, Total: o.total, Estado: o.status })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Ventas");
+            XLSX.writeFile(wb, "Reporte_Contable.xlsx");
+        }
+
+        function exportData() {
+            const data = JSON.stringify(products);
+            const blob = new Blob([data], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = "backup_leñas.json"; a.click();
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    products = JSON.parse(e.target.result);
+                    localStorage.setItem('lenas_products', JSON.stringify(products));
+                    showToast('Datos importados. Recargando...', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } catch(err) { showToast("Archivo inválido", 'error'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
+                    datasets: [{ label: 'Ventas', data: [100, 200, 150, 300, 250, 400, 350], borderColor: '#FF4500', backgroundColor: 'rgba(255, 69, 0, 0.2)', fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: 'white' } } }, scales: { y: { ticks: { color: '#999' }, grid: { color: '#333' } }, x: { ticks: { color: '#999' }, grid: { display: false } } } }
+            });
+        }
+    </script>
+</body>
+</html>

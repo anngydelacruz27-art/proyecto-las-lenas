@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito - Leñas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B4513;
+            --secondary: #D2691E;
+            --accent: #DC143C;
+            --accent2: #FFD700;
+            --text: #2F1B14;
+            --background: #FFF8DC;
+        }
+        
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .playfair { font-family: 'Playfair Display', serif; }
+        .roboto-slab { font-family: 'Roboto Slab', serif; }
+        
+        .cart-item {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(139, 69, 19, 0.1);
+            border: 1px solid rgba(220, 20, 60, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .cart-item:hover {
+            box-shadow: 0 8px 24px rgba(139, 69, 19, 0.15);
+        }
+        
+        .fire-button {
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .fire-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(220, 20, 60, 0.3);
+        }
+        
+        .fire-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .quantity-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quantity-btn:hover {
+            background: var(--accent);
+            transform: scale(1.1);
+        }
+        
+        .quantity-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.1);
+            border: 1px solid rgba(220, 20, 60, 0.1);
+        }
+        
+        .coupon-input {
+            background: var(--background);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .coupon-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.2);
+        }
+        
+        .empty-cart {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text);
+        }
+        
+        .price-tag {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        
+        .wooden-frame {
+            border: 6px solid #8B4513;
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            color: var(--accent);
+        }
+        
+        .coupon-success {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .coupon-error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="resources/logo_leñas.png" alt="Leñas Logo" class="h-12 w-12 rounded-full wooden-frame">
+                    <div class="playfair text-3xl font-bold text-primary">Leñas</div>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-700 hover:text-primary transition-colors">Inicio</a>
+                    <a href="cart.html" class="nav-link text-primary font-semibold border-b-2 border-accent">Carrito</a>
+                    <a href="tracking.html" class="nav-link text-gray-700 hover:text-primary transition-colors">Seguimiento</a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative cursor-pointer" onclick="window.location.href='cart.html'">
+                        <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6"></path>
+                        </svg>
+                        <div class="cart-counter absolute -top-2 -right-2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold" id="cart-counter">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="playfair text-4xl lg:text-5xl font-bold mb-4">Tu Carrito de Compras</h1>
+            <p class="text-lg opacity-90 max-w-2xl mx-auto">
+                Revisa tus productos seleccionados antes de proceder con tu pedido
+            </p>
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Cart Items -->
+                <div class="lg:col-span-2">
+                    <div class="cart-item p-6 mb-6">
+                        <h2 class="playfair text-2xl font-bold mb-6 text-primary">Productos Seleccionados</h2>
+                        
+                        <div id="cart-items">
+                            <!-- Cart items will be populated here -->
+                        </div>
+                        
+                        <div id="empty-cart" class="empty-cart">
+                            <div class="text-6xl mb-4">🍖</div>
+                            <h3 class="playfair text-2xl font-bold mb-2 text-primary">Tu carrito está vacío</h3>
+                            <p class="text-gray-600 mb-6">Agrega productos deliciosos de nuestra gastronomía peruana</p>
+                            <button onclick="window.location.href='index.html'" class="fire-button px-8 py-4">
+                                EXPLORAR MENÚ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="lg:col-span-1">
+                    <div class="summary-card p-6 mb-6">
+                        <h2 class="playfair text-xl font-bold mb-6 text-primary">Resumen del Pedido</h2>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span class="price-tag" id="subtotal">S/ 0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Delivery:</span>
+                                <span class="price-tag" id="delivery">S/ 8.00</span>
+                            </div>
+                            <div class="flex justify-between" id="discount-row" style="display: none;">
+                                <span>Descuento:</span>
+                                <span class="price-tag text-green-600" id="discount">-S/ 0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>IGV (18%):</span>
+                                <span class="price-tag" id="tax">S/ 0.00</span>
+                            </div>
+                            <hr class="border-gray-300">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span>Total:</span>
+                                <span class="price-tag" id="total">S/ 0.00</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Coupon Section -->
+                        <div class="mb-6">
+                            <h3 class="font-semibold mb-3">Cupón de Descuento</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="coupon-input" class="coupon-input flex-1" placeholder="Ingresa tu cupón">
+                                <button onclick="applyCoupon()" class="fire-button px-4 py-2 text-sm">APLICAR</button>
+                            </div>
+                            <div id="coupon-success" class="coupon-success">¡Cupón aplicado exitosamente!</div>
+                            <div id="coupon-error" class="coupon-error">Cupón inválido o expirado</div>
+                        </div>
+                        
+                        <button id="checkout-btn" class="w-full fire-button py-4 text-lg" onclick="proceedToCheckout()" disabled>
+                            PROCESAR PEDIDO
+                        </button>
+                    </div>
+
+                    <!-- Delivery Info -->
+                    <div class="summary-card p-6">
+                        <h3 class="playfair text-lg font-bold mb-4 text-primary">Información de Delivery</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Tiempo de entrega: 30-45 minutos</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>Horario: L-D 11:00 AM - 10:00 PM</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                                </svg>
+                                <span>Atención al cliente: 01-234-5678</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <div class="playfair text-3xl font-bold mb-4">Leñas</div>
+            <p class="text-lg mb-4">Gastronomía Peruana de Brasas</p>
+            <p class="text-sm opacity-75">© 2025 Leñas - Todos los derechos reservados</p>
+            <p class="text-xs opacity-60 mt-2">Sabores que calientan el alma</p>
+        </div>
+    </footer>
+
+    <script>
+        // Shopping cart functionality
+        let cart = JSON.parse(localStorage.getItem('leñasCart')) || [];
+        let appliedCoupon = null;
+        
+        const validCoupons = {
+            'LEÑAS10': { discount: 0.10, type: 'percentage' },
+            'PERUANO15': { discount: 15, type: 'fixed' },
+            'BRASAS20': { discount: 0.20, type: 'percentage' }
+        };
+        
+        function renderCart() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const emptyCartMessage = document.getElementById('empty-cart');
+            
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '';
+                emptyCartMessage.style.display = 'block';
+                document.getElementById('checkout-btn').disabled = true;
+                updateOrderSummary();
+                return;
+            }
+            
+            emptyCartMessage.style.display = 'none';
+            document.getElementById('checkout-btn').disabled = false;
+            
+            cartItemsContainer.innerHTML = cart.map((item, index) => `
+                <div class="cart-item p-4 mb-4 flex items-center gap-4">
+                    <div class="wooden-frame">
+                        <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded-lg">
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-lg text-primary">${item.name}</h3>
+                        <p class="text-accent font-bold">S/ ${item.price.toFixed(2)}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="quantity-btn" onclick="updateQuantity(${index}, -1)" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+                        <span class="w-8 text-center font-bold">${item.quantity}</span>
+                        <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                        <button class="ml-4 text-red-500 hover:text-red-700" onclick="removeItem(${index})">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-right">
+                        <div class="price-tag">S/ ${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateOrderSummary();
+        }
+        
+        function updateQuantity(index, change) {
+            if (cart[index].quantity + change <= 0) return;
+            cart[index].quantity += change;
+            localStorage.setItem('leñasCart', JSON.stringify(cart));
+            renderCart();
+            updateCartCounter();
+        }
+        
+        function removeItem(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('leñasCart', JSON.stringify(cart));
+            renderCart();
+            updateCartCounter();
+        }
+        
+        function updateOrderSummary() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const delivery = 8.00;
+            let discount = 0;
+            
+            if (appliedCoupon) {
+                if (appliedCoupon.type === 'percentage') {
+                    discount = subtotal * appliedCoupon.discount;
+                } else {
+                    discount = appliedCoupon.discount;
+                }
+                document.getElementById('discount-row').style.display = 'flex';
+                document.getElementById('discount').textContent = `-S/ ${discount.toFixed(2)}`;
+            } else {
+                document.getElementById('discount-row').style.display = 'none';
+            }
+            
+            const taxableAmount = subtotal - discount;
+            const tax = taxableAmount * 0.18;
+            const total = taxableAmount + delivery + tax;
+            
+            document.getElementById('subtotal').textContent = `S/ ${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `S/ ${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `S/ ${total.toFixed(2)}`;
+        }
+        
+        function applyCoupon() {
+            const couponInput = document.getElementById('coupon-input');
+            const couponCode = couponInput.value.toUpperCase().trim();
+            
+            if (validCoupons[couponCode]) {
+                appliedCoupon = validCoupons[couponCode];
+                document.getElementById('coupon-success').style.display = 'block';
+                document.getElementById('coupon-error').style.display = 'none';
+                couponInput.disabled = true;
+                updateOrderSummary();
+            } else {
+                document.getElementById('coupon-error').style.display = 'block';
+                document.getElementById('coupon-success').style.display = 'none';
+            }
+        }
+        
+        function proceedToCheckout() {
+            if (cart.length === 0) {
+                alert('Tu carrito está vacío');
+                return;
+            }
+            
+            // Create order record
+            const orderId = 'LN-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const newOrder = {
+                id: orderId,
+                customer: 'Cliente Demo', // This would be replaced with actual customer data
+                phone: '+51 999 999 999',
+                address: 'Dirección de entrega',
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + 8.00 + (cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.18),
+                status: 'preparing',
+                date: new Date().toLocaleString(),
+                items: cart.map(item => ({ name: item.name, quantity: item.quantity, price: item.price })),
+                paymentMethod: 'Por confirmar',
+                deliveryTime: 30
+            };
+            
+            // Save order to localStorage
+            let orders = JSON.parse(localStorage.getItem('orders')) || [];
+            orders.push(newOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            // Update customer points
+            updateCustomerPoints();
+            
+            window.location.href = 'checkout.html';
+        }
+        
+        function updateCustomerPoints() {
+            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const pointsEarned = Math.floor(totalAmount / 10); // 1 punto por cada S/ 10
+            
+            // Update frequent customers data
+            let frequentCustomers = JSON.parse(localStorage.getItem('frequentCustomers')) || [];
+            
+            const existingCustomer = frequentCustomers.find(c => c.name === 'Cliente Demo');
+            if (existingCustomer) {
+                existingCustomer.orders += 1;
+                existingCustomer.totalSpent += totalAmount;
+                existingCustomer.points += pointsEarned;
+                existingCustomer.lastOrder = new Date().toISOString().split('T')[0];
+            } else {
+                frequentCustomers.push({
+                    name: 'Cliente Demo',
+                    orders: 1,
+                    totalSpent: totalAmount,
+                    lastOrder: new Date().toISOString().split('T')[0],
+                    points: pointsEarned
+                });
+            }
+            
+            localStorage.setItem('frequentCustomers', JSON.stringify(frequentCustomers));
+        }
+        
+        function updateCartCounter() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cart-counter').textContent = totalItems;
+        }
+        
+        // Initialize page
+        renderCart();
+        updateCartCounter();
+    </script>
+</body>
+</html>

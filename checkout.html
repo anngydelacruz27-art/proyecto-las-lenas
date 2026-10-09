@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Leñas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #8B4513;
+            --secondary: #D2691E;
+            --accent: #DC143C;
+            --accent2: #FFD700;
+            --text: #2F1B14;
+            --background: #FFF8DC;
+        }
+        
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .playfair { font-family: 'Playfair Display', serif; }
+        .roboto-slab { font-family: 'Roboto Slab', serif; }
+        
+        .checkout-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.1);
+            border: 1px solid rgba(220, 20, 60, 0.1);
+        }
+        
+        .fire-button {
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .fire-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(220, 20, 60, 0.3);
+        }
+        
+        .fire-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .form-input {
+            background: var(--background);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.2);
+        }
+        
+        .payment-method {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 16px rgba(220, 20, 60, 0.2);
+        }
+        
+        .payment-method.selected {
+            border-color: var(--accent);
+            background: rgba(220, 20, 60, 0.05);
+        }
+        
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            position: relative;
+        }
+        
+        .step.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .step.completed {
+            background: var(--accent2);
+            color: var(--text);
+        }
+        
+        .step.inactive {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
+        
+        .step-line {
+            flex: 1;
+            height: 2px;
+            background: #e5e7eb;
+            margin: 0 15px;
+        }
+        
+        .step-line.completed {
+            background: var(--accent2);
+        }
+        
+        .wooden-frame {
+            border: 6px solid #8B4513;
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .price-tag {
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .success-animation {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .success-animation.show {
+            display: block;
+            animation: fadeInScale 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="resources/logo_leñas.png" alt="Leñas Logo" class="h-12 w-12 rounded-full wooden-frame">
+                    <div class="playfair text-3xl font-bold text-primary">Leñas</div>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-primary transition-colors">Inicio</a>
+                    <a href="cart.html" class="text-gray-700 hover:text-primary transition-colors">Carrito</a>
+                    <a href="tracking.html" class="text-primary font-semibold border-b-2 border-accent">Seguimiento</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="playfair text-4xl lg:text-5xl font-bold mb-4">Finalizar Compra</h1>
+            <p class="text-lg opacity-90 max-w-2xl mx-auto">
+                Completa tu información para procesar tu pedido de deliciosos sabores peruanos
+            </p>
+        </div>
+    </section>
+
+    <!-- Checkout Section -->
+    <section class="py-16">
+        <div class="container mx-auto px-6">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active" id="step-1">1</div>
+                    <div class="step-line" id="line-1"></div>
+                    <div class="step inactive" id="step-2">2</div>
+                    <div class="step-line" id="line-2"></div>
+                    <div class="step inactive" id="step-3">3</div>
+                    <div class="step-line" id="line-3"></div>
+                    <div class="step inactive" id="step-4">4</div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Checkout Form -->
+                    <div class="lg:col-span-2">
+                        
+                        <!-- Step 1: Customer Information -->
+                        <div id="checkout-step-1" class="checkout-card p-6 mb-6">
+                            <h2 class="playfair text-2xl font-bold mb-6 text-primary">Información del Cliente</h2>
+                            
+                            <form id="customer-form" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold mb-2">Nombre completo *</label>
+                                        <input type="text" name="fullName" class="form-input" placeholder="Ingresa tu nombre completo" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold mb-2">DNI / CE *</label>
+                                        <input type="text" name="idNumber" class="form-input" placeholder="Número de documento" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold mb-2">Teléfono *</label>
+                                        <input type="tel" name="phone" class="form-input" placeholder="Número de contacto" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold mb-2">Correo electrónico</label>
+                                        <input type="email" name="email" class="form-input" placeholder="tu@email.com">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">Dirección de entrega *</label>
+                                    <input type="text" name="address" class="form-input" placeholder="Calle, número, distrito" required>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-semibold mb-2">Referencia (opcional)</label>
+                                    <textarea name="reference" class="form-input" rows="3" placeholder="Punto de referencia, edificio, piso, etc."></textarea>
+                                </div>
+                                
+                                <button type="button" onclick="nextStep(2)" class="fire-button w-full py-3">
+                                    CONTINUAR AL PAGO
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Step 2: Payment Method -->
+                        <div id="checkout-step-2" class="checkout-card p-6 mb-6" style="display: none;">
+                            <h2 class="playfair text-2xl font-bold mb-6 text-primary">Método de Pago</h2>
+                            
+                            <div class="space-y-4">
+                                <div class="payment-method" onclick="selectPaymentMethod('yape')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold mr-4">
+                                                Y
+                                            </div>
+                                            <div>
+                                                <h3 class="font-semibold">Yape</h3>
+                                                <p class="text-sm text-gray-600">Pago rápido con QR</p>
+                                            </div>
+                                        </div>
+                                        <input type="radio" name="payment" value="yape" class="payment-radio">
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-method" onclick="selectPaymentMethod('plin')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold mr-4">
+                                                P
+                                            </div>
+                                            <div>
+                                                <h3 class="font-semibold">Plin</h3>
+                                                <p class="text-sm text-gray-600">Transferencia interbancaria</p>
+                                            </div>
+                                        </div>
+                                        <input type="radio" name="payment" value="plin" class="payment-radio">
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-method" onclick="selectPaymentMethod('card')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold mr-4">
+                                                💳
+                                            </div>
+                                            <div>
+                                                <h3 class="font-semibold">Tarjeta de Crédito/Débito</h3>
+                                                <p class="text-sm text-gray-600">Visa, Mastercard, American Express</p>
+                                            </div>
+                                        </div>
+                                        <input type="radio" name="payment" value="card" class="payment-radio">
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-method" onclick="selectPaymentMethod('cash')">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center text-white font-bold mr-4">
+                                                💵
+                                            </div>
+                                            <div>
+                                                <h3 class="font-semibold">Efectivo</h3>
+                                                <p class="text-sm text-gray-600">Pago contra entrega</p>
+                                            </div>
+                                        </div>
+                                        <input type="radio" name="payment" value="cash" class="payment-radio">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-4 mt-6">
+                                <button onclick="previousStep(1)" class="flex-1 py-3 px-6 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                                    ATRÁS
+                                </button>
+                                <button onclick="nextStep(3)" class="flex-1 fire-button py-3" disabled id="payment-continue">
+                                    CONTINUAR
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Order Review -->
+                        <div id="checkout-step-3" class="checkout-card p-6 mb-6" style="display: none;">
+                            <h2 class="playfair text-2xl font-bold mb-6 text-primary">Revisar Pedido</h2>
+                            
+                            <div id="order-review" class="space-y-4">
+                                <!-- Order items will be populated here -->
+                            </div>
+                            
+                            <div class="flex gap-4 mt-6">
+                                <button onclick="previousStep(2)" class="flex-1 py-3 px-6 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                                    ATRÁS
+                                </button>
+                                <button onclick="nextStep(4)" class="flex-1 fire-button py-3">
+                                    CONFIRMAR PEDIDO
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 4: Loading & Success -->
+                        <div id="checkout-step-4" class="checkout-card p-6 mb-6" style="display: none;">
+                            <div class="loading" id="loading">
+                                <div class="spinner"></div>
+                                <p class="mt-4 text-lg">Procesando tu pedido...</p>
+                            </div>
+                            
+                            <div class="success-animation" id="success">
+                                <div class="text-6xl mb-4">🎉</div>
+                                <h2 class="playfair text-3xl font-bold mb-4 text-primary">¡Pedido Confirmado!</h2>
+                                <p class="text-lg mb-6">Tu pedido ha sido procesado exitosamente</p>
+                                <div class="bg-gray-100 p-4 rounded-lg mb-6">
+                                    <p class="font-semibold mb-2">Número de pedido:</p>
+                                    <p class="text-2xl font-bold text-accent" id="order-number">#LN-2025-001</p>
+                                </div>
+                                <div class="flex gap-4">
+                                    <button onclick="window.location.href='tracking.html'" class="fire-button px-6 py-3">
+                                        SEGUIR PEDIDO
+                                    </button>
+                                    <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                                        SEGUIR COMPRANDO
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div class="lg:col-span-1">
+                        <div class="checkout-card p-6 sticky top-24">
+                            <h2 class="playfair text-xl font-bold mb-6 text-primary">Resumen del Pedido</h2>
+                            
+                            <div class="space-y-4 mb-6">
+                                <div class="flex justify-between">
+                                    <span>Subtotal:</span>
+                                    <span class="price-tag" id="summary-subtotal">S/ 0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Delivery:</span>
+                                    <span class="price-tag" id="summary-delivery">S/ 8.00</span>
+                                </div>
+                                <div class="flex justify-between" id="summary-discount-row" style="display: none;">
+                                    <span>Descuento:</span>
+                                    <span class="price-tag text-green-600" id="summary-discount">-S/ 0.00</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>IGV (18%):</span>
+                                    <span class="price-tag" id="summary-tax">S/ 0.00</span>
+                                </div>
+                                <hr class="border-gray-300">
+                                <div class="flex justify-between text-lg font-bold">
+                                    <span>Total:</span>
+                                    <span class="price-tag" id="summary-total">S/ 0.00</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 class="font-semibold mb-2">Productos:</h3>
+                                <div id="summary-items" class="space-y-2 text-sm">
+                                    <!-- Summary items will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <div class="playfair text-3xl font-bold mb-4">Leñas</div>
+            <p class="text-lg mb-4">Gastronomía Peruana de Brasas</p>
+            <p class="text-sm opacity-75">© 2025 Leñas - Todos los derechos reservados</p>
+            <p class="text-xs opacity-60 mt-2">Sabores que calientan el alma</p>
+        </div>
+    </footer>
+
+    <script>
+        let currentStep = 1;
+        let selectedPaymentMethod = null;
+        let cart = JSON.parse(localStorage.getItem('leñasCart')) || [];
+        
+        function nextStep(step) {
+            if (step === 2 && !validateCustomerInfo()) return;
+            if (step === 3 && !selectedPaymentMethod) {
+                alert('Por favor selecciona un método de pago');
+                return;
+            }
+            
+            if (step === 3) {
+                populateOrderReview();
+            }
+            
+            if (step === 4) {
+                processOrder();
+                return;
+            }
+            
+            // Hide current step
+            document.getElementById(`checkout-step-${currentStep}`).style.display = 'none';
+            
+            // Update step indicators
+            document.getElementById(`step-${currentStep}`).classList.remove('active');
+            document.getElementById(`step-${currentStep}`).classList.add('completed');
+            document.getElementById(`line-${currentStep}`).classList.add('completed');
+            
+            // Show next step
+            document.getElementById(`checkout-step-${step}`).style.display = 'block';
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById(`step-${step}`).classList.remove('inactive');
+            
+            currentStep = step;
+        }
+        
+        function previousStep(step) {
+            // Hide current step
+            document.getElementById(`checkout-step-${currentStep}`).style.display = 'none';
+            
+            // Update step indicators
+            document.getElementById(`step-${currentStep}`).classList.remove('active');
+            document.getElementById(`step-${currentStep}`).classList.add('inactive');
+            
+            // Show previous step
+            document.getElementById(`checkout-step-${step}`).style.display = 'block';
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById(`step-${step}`).classList.remove('completed');
+            document.getElementById(`line-${step}`).classList.remove('completed');
+            
+            currentStep = step;
+        }
+        
+        function validateCustomerInfo() {
+            const form = document.getElementById('customer-form');
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#DC143C';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#8B4513';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Por favor completa todos los campos obligatorios');
+            }
+            
+            return isValid;
+        }
+        
+        function selectPaymentMethod(method) {
+            // Remove selected class from all payment methods
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked method
+            event.currentTarget.classList.add('selected');
+            
+            // Update radio button
+            document.querySelector(`input[value="${method}"]`).checked = true;
+            
+            selectedPaymentMethod = method;
+            document.getElementById('payment-continue').disabled = false;
+        }
+        
+        function populateOrderReview() {
+            const orderReview = document.getElementById('order-review');
+            const summaryItems = document.getElementById('summary-items');
+            
+            let reviewHTML = '';
+            let summaryHTML = '';
+            
+            cart.forEach(item => {
+                reviewHTML += `
+                    <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded-lg mr-3">
+                            <div>
+                                <h4 class="font-semibold">${item.name}</h4>
+                                <p class="text-sm text-gray-600">Cantidad: ${item.quantity}</p>
+                            </div>
+                        </div>
+                        <span class="price-tag">S/ ${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `;
+                
+                summaryHTML += `
+                    <div class="flex justify-between">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>S/ ${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            orderReview.innerHTML = reviewHTML;
+            summaryItems.innerHTML = summaryHTML;
+            
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const delivery = 8.00;
+            const tax = subtotal * 0.18;
+            const total = subtotal + delivery + tax;
+            
+            document.getElementById('summary-subtotal').textContent = `S/ ${subtotal.toFixed(2)}`;
+            document.getElementById('summary-tax').textContent = `S/ ${tax.toFixed(2)}`;
+            document.getElementById('summary-total').textContent = `S/ ${total.toFixed(2)}`;
+        }
+        
+        function processOrder() {
+            // Show loading
+            document.getElementById('checkout-step-3').style.display = 'none';
+            document.getElementById('checkout-step-4').style.display = 'block';
+            document.getElementById('loading').classList.add('show');
+            
+            // Simulate order processing
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('success').classList.add('show');
+                
+                // Generate order number
+                const orderNumber = 'LN-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                document.getElementById('order-number').textContent = '#' + orderNumber;
+                
+                // Clear cart
+                localStorage.removeItem('leñasCart');
+                
+                // Update step indicators
+                document.getElementById('step-3').classList.remove('active');
+                document.getElementById('step-3').classList.add('completed');
+                document.getElementById('line-3').classList.add('completed');
+                document.getElementById('step-4').classList.add('completed');
+                document.getElementById('step-4').classList.remove('inactive');
+                
+            }, 3000);
+        }
+        
+        // Initialize page
+        updateSummary();
+    </script>
+</body>
+</html>

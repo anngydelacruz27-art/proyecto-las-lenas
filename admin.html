@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo - Leñas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #8B4513;
+            --secondary: #D2691E;
+            --accent: #DC143C;
+            --accent2: #FFD700;
+            --text: #2F1B14;
+            --background: #634b1f;
+        }
+        
+        body {
+            background: var(--background);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .playfair { font-family: 'Playfair Display', serif; }
+        .roboto-slab { font-family: 'Roboto Slab', serif; }
+        
+        .admin-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.1);
+            border: 1px solid rgba(220, 20, 60, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .admin-card:hover {
+            box-shadow: 0 12px 40px rgba(139, 69, 19, 0.15);
+        }
+        
+        .fire-button {
+            background: linear-gradient(45deg, var(--secondary), var(--accent));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .fire-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px rgba(220, 20, 60, 0.3);
+        }
+        
+        .form-input {
+            background: var(--background);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.2);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(139, 69, 19, 0.3);
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .order-table th,
+        .order-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .order-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .order-table tr:hover {
+            background: rgba(220, 20, 60, 0.05);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-preparing {
+            background: rgba(210, 105, 30, 0.2);
+            color: var(--secondary);
+        }
+        
+        .status-ready {
+            background: rgba(255, 215, 0, 0.2);
+            color: #b8860b;
+        }
+        
+        .status-delivered {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00aa00;
+        }
+        
+        .status-cancelled {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+        }
+        
+        .price-tag {
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .wooden-frame {
+            border: 6px solid #8B4513;
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+        }
+        
+        .nav-link {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link:hover {
+            color: var(--accent);
+        }
+        
+        .tab-button {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active,
+        .tab-button:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .customer-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(220, 20, 60, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .customer-card:hover {
+            box-shadow: 0 8px 24px rgba(220, 20, 60, 0.1);
+        }
+        
+        .promotion-card {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .promotion-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .search-box {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.2);
+        }
+        
+        .action-button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .action-button.view {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .action-button.edit {
+            background: var(--accent2);
+            color: var(--text);
+        }
+        
+        .action-button.delete {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .action-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="resources/logo_leñas.png" alt="Leñas Logo" class="h-12 w-12 rounded-full wooden-frame">
+                    <div class="playfair text-3xl font-bold text-primary">Leñas</div>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="index.html" class="nav-link text-gray-700 hover:text-primary transition-colors">Inicio</a>
+                    <a href="cart.html" class="nav-link text-gray-700 hover:text-primary transition-colors">Carrito</a>
+                    <a href="tracking.html" class="nav-link text-gray-700 hover:text-primary transition-colors">Seguimiento</a>
+                    <a href="admin.html" class="nav-link text-primary font-semibold border-b-2 border-accent">Admin</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="bg-primary text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="playfair text-4xl lg:text-5xl font-bold mb-4">Panel Administrativo</h1>
+            <p class="text-lg opacity-90 max-w-2xl mx-auto">
+                Gestión completa de tu negocio gastronómico
+            </p>
+        </div>
+    </section>
+
+    <!-- Admin Dashboard -->
+    <section class="py-16">
+        <div class="container mx-auto px-6">
+            
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="stats-card">
+                    <div class="text-3xl font-bold" id="total-revenue">S/ 35,890.20</div>
+                    <div class="text-sm opacity-90">Ingresos Totales</div>
+                    <div class="text-xs mt-2">+12.5% vs mes anterior</div>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="text-3xl font-bold" id="total-orders">1,245</div>
+                    <div class="text-sm opacity-90">Pedidos Completados</div>
+                    <div class="text-xs mt-2">+8.3% vs mes anterior</div>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="text-3xl font-bold" id="active-customers">456</div>
+                    <div class="text-sm opacity-90">Clientes Activos</div>
+                    <div class="text-xs mt-2">+15.2% vs mes anterior</div>
+                </div>
+                
+                <div class="stats-card">
+                    <div class="text-3xl font-bold" id="avg-order">S/ 28.80</div>
+                    <div class="text-sm opacity-90">Ticket Promedio</div>
+                    <div class="text-xs mt-2">+3.7% vs mes anterior</div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <button class="tab-button active" onclick="showTab('orders')">PEDIDOS</button>
+                <button class="tab-button" onclick="showTab('customers')">CLIENTES</button>
+                <button class="tab-button" onclick="showTab('products')">PRODUCTOS</button>
+                <button class="tab-button" onclick="showTab('promotions')">PROMOCIONES</button>
+                <button class="tab-button" onclick="showTab('analytics')">ANALYTICS</button>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="orders-tab" class="tab-content active">
+                <div class="admin-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="playfair text-2xl font-bold text-primary">Gestión de Pedidos</h2>
+                        <div class="flex gap-4">
+                            <input type="text" id="order-search" class="search-box" placeholder="Buscar pedidos...">
+                            <button class="fire-button" onclick="generateDailyReport()">📊 REPORTE DIARIO</button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body">
+                                <!-- Orders will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customers Tab -->
+            <div id="customers-tab" class="tab-content">
+                <div class="admin-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="playfair text-2xl font-bold text-primary">Clientes Frecuentes</h2>
+                        <button class="fire-button" onclick="exportCustomerData()">📥 EXPORTAR DATOS</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="customers-grid">
+                        <!-- Customers will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="products-tab" class="tab-content">
+                <div class="admin-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="playfair text-2xl font-bold text-primary">Gestión de Productos</h2>
+                        <button class="fire-button" onclick="showAddProductModal()">➕ AGREGAR PRODUCTO</button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="order-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Rating</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <!-- Products will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promotions Tab -->
+            <div id="promotions-tab" class="tab-content">
+                <div class="admin-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="playfair text-2xl font-bold text-primary">Gestión de Promociones</h2>
+                        <button class="fire-button" onclick="showAddPromotionModal()">➕ NUEVA PROMOCIÓN</button>
+                    </div>
+                    
+                    <div id="promotions-grid">
+                        <!-- Promotions will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <div class="admin-card p-6">
+                    <h2 class="playfair text-2xl font-bold text-primary mb-6">Analytics y Reportes</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <!-- Sales Chart -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Ventas por Día</h3>
+                            <div class="chart-container">
+                                <canvas id="daily-sales-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Performance -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Productos Más Vendidos</h3>
+                            <div class="chart-container">
+                                <canvas id="product-performance-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Revenue by Category -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Ingresos por Categoría</h3>
+                            <div class="chart-container">
+                                <canvas id="category-revenue-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Analytics -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Análisis de Clientes</h3>
+                            <div class="chart-container">
+                                <canvas id="customer-analytics-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button class="fire-button mr-4" onclick="generateWeeklyReport()">📊 REPORTE SEMANAL</button>
+                        <button class="fire-button" onclick="generateMonthlyReport()">📈 REPORTE MENSUAL</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Order Details Modal -->
+    <div id="order-modal" class="modal">
+        <div class="modal-content relative">
+            <button class="close-modal" onclick="closeModal('order-modal')">&times;</button>
+            <h2 class="playfair text-2xl font-bold mb-6 text-primary">Detalles del Pedido</h2>
+            <div id="order-details-content">
+                <!-- Order details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="modal">
+        <div class="modal-content relative">
+            <button class="close-modal" onclick="closeModal('add-product-modal')">&times;</button>
+            <h2 class="playfair text-2xl font-bold mb-6 text-primary">Agregar Nuevo Producto</h2>
+            <form id="add-product-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Nombre del Producto</label>
+                    <input type="text" name="name" class="form-input" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Categoría</label>
+                    <select name="category" class="form-input" required>
+                        <option value="">Selecciona categoría</option>
+                        <option value="parrillas">Parrillas</option>
+                        <option value="chifa">Chifa</option>
+                        <option value="hamburguesas">Hamburguesas</option>
+                        <option value="salchipapas">Salchipapas</option>
+                        <option value="tradicional">Tradicional</option>
+                        <option value="rapida">Comida Rápida</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Precio</label>
+                    <input type="number" name="price" class="form-input" step="0.01" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Descripción</label>
+                    <textarea name="description" class="form-input" rows="3" required></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Stock Inicial</label>
+                    <input type="number" name="stock" class="form-input" required>
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" onclick="closeModal('add-product-modal')" class="flex-1 py-3 px-6 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        CANCELAR
+                    </button>
+                    <button type="submit" class="flex-1 fire-button py-3">
+                        AGREGAR PRODUCTO
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <div class="playfair text-3xl font-bold mb-4">Leñas</div>
+            <p class="text-lg mb-4">Gastronomía Peruana de Brasas</p>
+            <p class="text-sm opacity-75">© 2025 Leñas - Todos los derechos reservados</p>
+            <p class="text-xs opacity-60 mt-2">Sabores que calientan el alma</p>
+        </div>
+    </footer>
+
+    <script>
+        // Sample data
+        let orders = [
+            { 
+                id: 'LN-2025-001', 
+                customer: 'Juan Pérez', 
+                phone: '+51 987 654 321',
+                address: 'Av. Principal 123, Lima',
+                total: 98.70, 
+                status: 'delivered', 
+                date: '2025-10-27 13:45',
+                items: [
+                    { name: 'Pollo a la Brasa', quantity: 1, price: 45.90 },
+                    { name: 'Arroz Chaufa Especial', quantity: 1, price: 28.90 }
+                ],
+                paymentMethod: 'Yape',
+                deliveryTime: 35
+            },
+            { 
+                id: 'LN-2025-002', 
+                customer: 'María García', 
+                phone: '+51 912 345 678',
+                address: 'Calle Secundaria 456, Lima',
+                total: 67.80, 
+                status: 'preparing', 
+                date: '2025-10-27 14:20',
+                items: [
+                    { name: 'Lomo Saltado', quantity: 1, price: 38.90 },
+                    { name: 'Causa Rellena', quantity: 1, price: 22.90 }
+                ],
+                paymentMethod: 'Tarjeta',
+                deliveryTime: 25
+            },
+            { 
+                id: 'LN-2025-003', 
+                customer: 'Carlos Rodríguez', 
+                phone: '+51 934 567 890',
+                address: 'Jr. Las Flores 789, Lima',
+                total: 45.90, 
+                status: 'ready', 
+                date: '2025-10-27 14:35',
+                items: [
+                    { name: 'Hamburguesa Peruana', quantity: 1, price: 24.90 },
+                    { name: 'Salchipapas Especiales', quantity: 1, price: 18.90 }
+                ],
+                paymentMethod: 'Plin',
+                deliveryTime: 20
+            }
+        ];
+        
+        let customers = [
+            { 
+                id: 1,
+                name: 'Juan Pérez', 
+                email: 'juan.perez@email.com',
+                phone: '+51 987 654 321',
+                orders: 15, 
+                totalSpent: 687.50, 
+                lastOrder: '2025-10-27', 
+                points: 150,
+                status: 'active',
+                joinDate: '2025-01-15'
+            },
+            { 
+                id: 2,
+                name: 'María García', 
+                email: 'maria.garcia@email.com',
+                phone: '+51 912 345 678',
+                orders: 12, 
+                totalSpent: 542.30, 
+                lastOrder: '2025-10-26', 
+                points: 120,
+                status: 'active',
+                joinDate: '2025-02-20'
+            },
+            { 
+                id: 3,
+                name: 'Carlos Rodríguez', 
+                email: 'carlos.rodriguez@email.com',
+                phone: '+51 934 567 890',
+                orders: 8, 
+                totalSpent: 398.70, 
+                lastOrder: '2025-10-25', 
+                points: 80,
+                status: 'active',
+                joinDate: '2025-03-10'
+            }
+        ];
+        
+        let products = [
+            { id: 1, name: 'Anticuchos de Corazón', category: 'parrillas', price: 25.90, stock: 50, rating: 4.8, sales: 127 },
+            { id: 2, name: 'Pollo a la Brasa', category: 'parrillas', price: 45.90, stock: 30, rating: 4.9, sales: 203 },
+            { id: 3, name: 'Arroz Chaufa Especial', category: 'chifa', price: 28.90, stock: 40, rating: 4.7, sales: 89 },
+            { id: 4, name: 'Hamburguesa Peruana', category: 'hamburguesas', price: 24.90, stock: 60, rating: 4.7, sales: 156 },
+            { id: 5, name: 'Salchipapas Especiales', category: 'salchipapas', price: 18.90, stock: 80, rating: 4.6, sales: 134 }
+        ];
+        
+        let promotions = [
+            {
+                id: 1,
+                name: 'Combo Hamburguesa',
+                description: 'Hamburguesa + Salchipapas + Bebida',
+                originalPrice: 47.70,
+                discountPrice: 35.90,
+                discount: 25,
+                validUntil: '2025-11-30',
+                active: true
+            },
+            {
+                id: 2,
+                name: 'Combo Familiar Premium',
+                description: 'Pollo a la brasa, anticuchos, salchipapas y bebidas para 4',
+                originalPrice: 112.30,
+                discountPrice: 89.90,
+                discount: 20,
+                validUntil: '2025-12-31',
+                active: true
+            }
+        ];
+        
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Load tab data
+            switch(tabName) {
+                case 'orders':
+                    loadOrdersTable();
+                    break;
+                case 'customers':
+                    loadCustomersGrid();
+                    break;
+                case 'products':
+                    loadProductsTable();
+                    break;
+                case 'promotions':
+                    loadPromotionsGrid();
+                    break;
+                case 'analytics':
+                    initializeCharts();
+                    break;
+            }
+        }
+        
+        // Load orders table
+        function loadOrdersTable() {
+            const tbody = document.getElementById('orders-table-body');
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td class="font-semibold">${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${order.date}</td>
+                    <td class="price-tag">S/ ${order.total.toFixed(2)}</td>
+                    <td>
+                        <span class="status-badge status-${order.status}">
+                            ${getStatusText(order.status)}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button class="action-button view" onclick="viewOrderDetails('${order.id}')">
+                                VER
+                            </button>
+                            <button class="action-button edit" onclick="editOrder('${order.id}')">
+                                EDITAR
+                            </button>
+                            <button class="action-button delete" onclick="deleteOrder('${order.id}')">
+                                ELIMINAR
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load customers grid
+        function loadCustomersGrid() {
+            const grid = document.getElementById('customers-grid');
+            
+            grid.innerHTML = customers.map(customer => `
+                <div class="customer-card">
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
+                            ${customer.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">${customer.name}</h3>
+                            <p class="text-sm text-gray-600">${customer.email}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Pedidos:</span>
+                            <span class="font-semibold">${customer.orders}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Total Gastado:</span>
+                            <span class="price-tag">S/ ${customer.totalSpent.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Puntos:</span>
+                            <span class="font-semibold">${customer.points}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Último Pedido:</span>
+                            <span class="text-gray-600">${customer.lastOrder}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t">
+                        <div class="flex gap-2">
+                            <button class="action-button view" onclick="viewCustomerDetails(${customer.id})">
+                                VER DETALLES
+                            </button>
+                            <button class="action-button edit" onclick="editCustomer(${customer.id})">
+                                EDITAR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Load products table
+        function loadProductsTable() {
+            const tbody = document.getElementById('products-table-body');
+            
+            tbody.innerHTML = products.map(product => `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td class="price-tag">S/ ${product.price.toFixed(2)}</td>
+                    <td>${product.stock}</td>
+                    <td>${product.rating} ⭐</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button class="action-button edit" onclick="editProduct(${product.id})">
+                                EDITAR
+                            </button>
+                            <button class="action-button delete" onclick="deleteProduct(${product.id})">
+                                ELIMINAR
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load promotions grid
+        function loadPromotionsGrid() {
+            const grid = document.getElementById('promotions-grid');
+            
+            grid.innerHTML = promotions.map(promo => `
+                <div class="promotion-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-xl font-bold">${promo.name}</h3>
+                        <span class="bg-white text-primary px-3 py-1 rounded-full text-sm font-bold">
+                            -${promo.discount}%
+                        </span>
+                    </div>
+                    
+                    <p class="mb-4">${promo.description}</p>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="text-sm line-through opacity-75">S/ ${promo.originalPrice.toFixed(2)}</span>
+                            <div class="text-2xl font-bold">S/ ${promo.discountPrice.toFixed(2)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm">Válido hasta</div>
+                            <div class="font-semibold">${promo.validUntil}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="action-button edit" onclick="editPromotion(${promo.id})">
+                            EDITAR
+                        </button>
+                        <button class="action-button delete" onclick="deletePromotion(${promo.id})">
+                            ELIMINAR
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize charts
+        function initializeCharts() {
+            // Daily Sales Chart
+            const dailyCtx = document.getElementById('daily-sales-chart').getContext('2d');
+            new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+                    datasets: [{
+                        label: 'Ventas Diarias',
+                        data: [1200, 1900, 3000, 5000, 2000, 3000, 2500],
+                        borderColor: '#DC143C',
+                        backgroundColor: 'rgba(220, 20, 60, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'S/ ' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Product Performance Chart
+            const productCtx = document.getElementById('product-performance-chart').getContext('2d');
+            new Chart(productCtx, {
+                type: 'bar',
+                data: {
+                    labels: products.map(p => p.name),
+                    datasets: [{
+                        label: 'Ventas',
+                        data: products.map(p => p.sales),
+                        backgroundColor: '#DC143C',
+                        borderColor: '#8B4513',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Category Revenue Chart
+            const categoryCtx = document.getElementById('category-revenue-chart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Parrillas', 'Chifa', 'Hamburguesas', 'Salchipapas', 'Tradicional'],
+                    datasets: [{
+                        data: [45, 25, 15, 10, 5],
+                        backgroundColor: ['#DC143C', '#D2691E', '#FFD700', '#8B4513', '#CD853F']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Customer Analytics Chart
+            const customerCtx = document.getElementById('customer-analytics-chart').getContext('2d');
+            new Chart(customerCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Nuevos', 'Recurrentes', 'VIP'],
+                    datasets: [{
+                        label: 'Clientes',
+                        data: [45, 35, 20],
+                        backgroundColor: ['#DC143C', '#D2691E', '#FFD700']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+        
+        // Order functions
+        function viewOrderDetails(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const content = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold">ID Pedido:</h4>
+                            <p>${order.id}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Cliente:</h4>
+                            <p>${order.customer}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Teléfono:</h4>
+                            <p>${order.phone}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Fecha:</h4>
+                            <p>${order.date}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold">Dirección:</h4>
+                        <p>${order.address}</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold">Productos:</h4>
+                        <ul class="list-disc list-inside">
+                            ${order.items.map(item => `<li>${item.name} x${item.quantity} - S/ ${item.price.toFixed(2)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold">Método de Pago:</h4>
+                            <p>${order.paymentMethod}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Total:</h4>
+                            <p class="price-tag text-xl">S/ ${order.total.toFixed(2)}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4 mt-6">
+                        <button class="fire-button" onclick="generateReceipt('${order.id}')">
+                            🧾 GENERAR COMPROBANTE
+                        </button>
+                        <button class="fire-button" onclick="generateTicket('${order.id}')">
+                            🎫 GENERAR TICKET
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('order-details-content').innerHTML = content;
+            showModal('order-modal');
+        }
+        
+        function generateReceipt(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.text('LEÑAS - GASTRONOMÍA PERUANA', 20, 30);
+            doc.setFontSize(16);
+            doc.text('COMPROBANTE DE PAGO', 20, 45);
+            
+            // Order Details
+            doc.setFontSize(12);
+            doc.text(`N° Pedido: ${order.id}`, 20, 60);
+            doc.text(`Fecha: ${order.date}`, 20, 70);
+            doc.text(`Cliente: ${order.customer}`, 20, 80);
+            doc.text(`Teléfono: ${order.phone}`, 20, 90);
+            doc.text(`Dirección: ${order.address}`, 20, 100);
+            
+            // Items
+            doc.text('PRODUCTOS:', 20, 120);
+            let yPosition = 130;
+            
+            order.items.forEach(item => {
+                doc.text(`${item.name} x${item.quantity}`, 20, yPosition);
+                doc.text(`S/ ${item.price.toFixed(2)}`, 150, yPosition);
+                yPosition += 10;
+            });
+            
+            // Total
+            doc.setFontSize(14);
+            doc.text(`TOTAL: S/ ${order.total.toFixed(2)}`, 20, yPosition + 20);
+            
+            // Footer
+            doc.setFontSize(10);
+            doc.text('Gracias por su preferencia', 20, yPosition + 40);
+            doc.text('Sabores que calientan el alma', 20, yPosition + 50);
+            
+            doc.save(`comprobante-${order.id}.pdf`);
+            alert('Comprobante generado exitosamente');
+        }
+        
+        function generateTicket(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const ticketContent = `
+=====================================
+        LEÑAS - GASTRONOMÍA PERUANA
+=====================================
+TICKET DE COMPRA
+N° Pedido: ${order.id}
+Fecha: ${order.date}
+Cliente: ${order.customer}
+
+PRODUCTOS:
+${order.items.map(item => `- ${item.name} x${item.quantity} - S/ ${item.price.toFixed(2)}`).join('\n')}
+
+TOTAL: S/ ${order.total.toFixed(2)}
+=====================================
+Gracias por su preferencia
+Sabores que calientan el alma
+=====================================
+            `;
+            
+            const blob = new Blob([ticketContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ticket-${order.id}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Ticket generado exitosamente');
+        }
+        
+        // Report generation functions
+        function generateDailyReport() {
+            const today = new Date().toLocaleDateString();
+            const dailyOrders = orders.filter(order => order.date.includes(today));
+            const totalSales = dailyOrders.reduce((sum, order) => sum + order.total, 0);
+            
+            const reportContent = `
+=====================================
+    REPORTE DIARIO - LEÑAS
+=====================================
+Fecha: ${today}
+
+RESUMEN DEL DÍA:
+- Total de Pedidos: ${dailyOrders.length}
+- Ingresos Totales: S/ ${totalSales.toFixed(2)}
+- Ticket Promedio: S/ ${(totalSales / dailyOrders.length || 0).toFixed(2)}
+
+PEDIDOS REALIZADOS:
+${dailyOrders.map(order => `- ${order.id}: ${order.customer} - S/ ${order.total.toFixed(2)}`).join('\n')}
+
+PRODUCTOS MÁS VENDIDOS:
+- Pollo a la Brasa: 45 unidades
+- Hamburguesa Peruana: 38 unidades
+- Salchipapas: 32 unidades
+
+=====================================
+Generado el ${new Date().toLocaleString()}
+=====================================
+            `;
+            
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reporte-diario-${today.replace(/\//g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Reporte diario generado exitosamente');
+        }
+        
+        function generateWeeklyReport() {
+            alert('Funcionalidad de reporte semanal en desarrollo');
+        }
+        
+        function generateMonthlyReport() {
+            alert('Funcionalidad de reporte mensual en desarrollo');
+        }
+        
+        // Utility functions
+        function getStatusText(status) {
+            const statusMap = {
+                'preparing': 'EN PREPARACIÓN',
+                'ready': 'LISTO',
+                'delivered': 'ENTREGADO',
+                'cancelled': 'CANCELADO'
+            };
+            return statusMap[status] || status.toUpperCase();
+        }
+        
+        function exportCustomerData() {
+            const csvContent = [
+                ['ID', 'Nombre', 'Email', 'Teléfono', 'Pedidos', 'Total Gastado', 'Puntos', 'Estado'],
+                ...customers.map(customer => [
+                    customer.id,
+                    customer.name,
+                    customer.email,
+                    customer.phone,
+                    customer.orders,
+                    customer.totalSpent,
+                    customer.points,
+                    customer.status
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'clientes-leñas.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            alert('Datos de clientes exportados exitosamente');
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrdersTable();
+            
+            // Form submission handlers
+            document.getElementById('add-product-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Producto agregado exitosamente');
+                closeModal('add-product-modal');
+            });
+        });
+    </script>
+</body>
+</html>
